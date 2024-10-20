@@ -33,3 +33,29 @@ The app targets individuals interested in adopting pets, especially those lookin
 ### Success Criteria
 
 Success will be measured by the number of adoptions facilitated through the app, particularly of at-risk animals. User satisfaction, engagement (for example, social sharing can be a measure later on).
+
+## Storage options
+
+Our application stores data as follows.
+
+- User's preferences
+  - Animal Type (String)
+  - Age (Boolean)
+  - Zip Code (Int)
+- Adoption data (JSON)
+  - The animal's data user has decided to adopt.
+  - This does not include all of the animal data.
+
+### Possible options
+
+|Options|Pros|Cons|
+|---|---|---|
+|Local Storage (shared_preferneces package) |Easy to implement for small data. Fast retrieval since data is stored on the device.Suitable for this app, where mainly stores primitive data types.|Limited to basic data types, Not idealistic for large datasets, like images or detailed animal profiles. while this application have to store image (animal image).|
+|File Storage|Good for storing large data, including media files. Can handle data formats such as JSON for adoption data. File data is private to the app by default.|Requires management to ensure data is read and written correctly. Compared to databases, data may not be easily structured. Extra stops for secure data handling.|
+|SQLite Database|Good for structured data, which applies to our options (preferences, and adoption data). can handle large datasets and complex queries. Data persistence across app sessions. So if user closes the app and reopen it, the preferences user has set before will be intact.|Storing image itself is not recommended, unless it is a path for the image. Complex to set up.|
+|Cloud Storage|Daya can be synced across devices adn accessed from anywhere. Useful for large or shared data like user interactions. So it won't make any conflicts if any of the users try to adopt an animal. Backend support for user authentication and security.|Requires internet connectivity, but is mandatory for fetching animal data. Additional costs for data storage and transfer. Add complexity to app architecture with a need for proper API calls and handling.|
+
+For this application, we will be using storage options as below.
+
+- Local storage: basic user preferences
+- Cloud Storage: saving animal data whether it is adopted (selected by any users) or not.
