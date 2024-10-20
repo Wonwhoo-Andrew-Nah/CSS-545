@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const MyApp());
 }
 
@@ -40,91 +44,171 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class TextScreen extends StatefulWidget {
-  const TextScreen({super.key, required this.text});
-
-  final String text;
-
-  @override
-  State<TextScreen> createState() => _TextScreenState();
-}
-
-class _TextScreenState extends State<TextScreen> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        appBar:
-            AppBar(backgroundColor: Colors.purple, title: Text(widget.text)),
-        body: const Center(
-            child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[Text('This is Text Screen!')])));
-  }
-}
-
 class _MyHomePageState extends State<MyHomePage> {
-  // int _counter = 0;
+  final TextEditingController _zipController = TextEditingController();
+  String? _animalType;
+  double _animalAge = 0.0;
 
-  // void _incrementCounter() {
-  //   setState(() {
-  //     // This call to setState tells the Flutter framework that something has
-  //     // changed in this State, which causes it to rerun the build method below
-  //     // so that the display can reflect the updated values. If we changed
-  //     // _counter without calling setState(), then the build method would not be
-  //     // called again, and so nothing would appear to happen.
-  //     _counter++;
-  //   });
-  // }
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _animalType = prefs.getString('animalType') ?? 'Dog';
+      _animalAge = prefs.getDouble('animalAge') ?? 0;
+      _zipController.text = prefs.getString('zipCode') ?? '';
+    });
+  }
+
+  Future<void> _savePreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setString('animalType', _animalType!);
+    prefs.setDouble('animalAge', _animalAge!);
+    prefs.setString('zipCode', _zipController.text);
+  }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
         backgroundColor: Colors.amber,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: const Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text(
-              'This is Homepage!',
+            DropdownButton<String>(
+              value: _animalType,
+              items: <String>['Dog', 'Cat', 'Others'].map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  _animalType = newValue;
+                });
+              },
+            ),
+            Column(
+              children: [
+                Text("Animal Age: ${_animalAge.toStringAsFixed(1)} years"),
+                Slider(
+                  value: _animalAge,
+                  min: 0.0,
+                  max: 20.0,
+                  divisions: 20,
+                  label: _animalAge.toStringAsFixed(1),
+                  onChanged: (double value) {
+                    setState(() {
+                      _animalAge = value;
+                    });
+                  },
+                ),
+              ],
+            ),
+            TextField(
+              controller: _zipController,
+              decoration: const InputDecoration(labelText: "Enter ZIP Code"),
+              keyboardType: TextInputType.number,
+            ),
+            ElevatedButton(
+              onPressed: _savePreferences,
+              child: const Text('Save Preferences'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => const AnimalSwipeScreen()));
+              },
+              child: const Text('Start Swiping'),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(onPressed: () {
-        Navigator.of(context).push(MaterialPageRoute(
-            builder: (context) => const TextScreen(
-                  text: 'Moved to TextScreen',
-                )));
-      }),
-    ); // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+}
+
+class AnimalSwipeScreen extends StatefulWidget {
+  const AnimalSwipeScreen({super.key});
+
+  @override
+  _AnimalSwipeScreenState createState() => _AnimalSwipeScreenState();
+}
+
+class _AnimalSwipeScreenState extends State<AnimalSwipeScreen> {
+  // Mock data
+  final List<Map<String, dynamic>> _animals = [
+    {'name': 'Buddy', 'type': 'Dog', 'isAdopted': false},
+    {'name': 'Mittens', 'type': 'Cat', 'isAdopted': false},
+    {'name': 'Max', 'type': 'Dog', 'isAdopted': false},
+  ];
+
+  // TODO: fix parameter into String ID
+  Future<void> _adoptAnimal(String animalName) async {
+    await FirebaseFirestore.instance
+        .collection('adoptions')
+        .doc(animalName)
+        .set({
+      'adopted': true,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    setState(() {
+      _animals.firstWhere(
+          (animal) => animal['name'] == animalName)['isAdopted'] = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Swipe Animals')),
+      body: ListView.builder(
+        itemCount: _animals.length,
+        itemBuilder: (context, index) {
+          final animal = _animals[index];
+          return GestureDetector(
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) => AlertDialog(
+                  title: Text('Adopt ${animal['name']}?'),
+                  content: Text('Would you like to adopt ${animal['name']}?'),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        _adoptAnimal(animal['name']);
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Adopt'),
+                    ),
+                  ],
+                ),
+              );
+            },
+            child: ListTile(
+              title: Text(animal['name']),
+              subtitle: Text('Type: ${animal['type']}'),
+              trailing: animal['isAdopted']
+                  ? const Text('Adopted')
+                  : const Text('Available'),
+            ),
+          );
+        },
+      ),
+    );
   }
 }
