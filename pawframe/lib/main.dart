@@ -39,7 +39,16 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+    _checkAndNavigateToListPage();
     _loadPreferences();
+  }
+
+  Future<void> _checkAndNavigateToListPage() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.containsKey('zipCode')) {
+      Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const AnimalListScreen()));
+    }
   }
 
   Future<void> _loadPreferences() async {
@@ -56,6 +65,9 @@ class _MyHomePageState extends State<MyHomePage> {
     prefs.setString('animalType', _animalType!);
     prefs.setDouble('animalAge', _animalAge);
     prefs.setString('zipCode', _zipController.text);
+
+    Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const AnimalListScreen()));
   }
 
   @override
@@ -110,13 +122,6 @@ class _MyHomePageState extends State<MyHomePage> {
               onPressed: _savePreferences,
               child: const Text('Save Preferences'),
             ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => const AnimalSwipeScreen()));
-              },
-              child: const Text('Start Swiping'),
-            ),
           ],
         ),
       ),
@@ -124,101 +129,170 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-class AnimalSwipeScreen extends StatefulWidget {
-  const AnimalSwipeScreen({super.key});
+class AnimalListScreen extends StatefulWidget {
+  const AnimalListScreen({super.key});
 
   @override
-  _AnimalSwipeScreenState createState() => _AnimalSwipeScreenState();
+  _AnimalListScreenState createState() => _AnimalListScreenState();
 }
 
-class _AnimalSwipeScreenState extends State<AnimalSwipeScreen> {
-  List<Map<String, dynamic>> _animals = [
+class _AnimalListScreenState extends State<AnimalListScreen> {
+  final List<Map<String, dynamic>> _animals = [
     {
       'name': 'Buddy',
       'type': 'Dog',
-      'imageUrl': 'https://petharbor.com/get_image.asp?RES=Detail&ID=A712125&LOCATION=KING',
+      'age': 3,
+      'description': 'Friendly and playful dog looking for a loving home.',
+      'imageUrl': 'assets/images/Dog1.png',
       'isAdopted': false,
     },
     {
       'name': 'Mittens',
       'type': 'Cat',
-      'imageUrl': 'https://petharbor.com/get_image.asp?RES=Detail&ID=A716708&LOCATION=KING',
+      'age': 2,
+      'description': 'Shy but affectionate cat who loves to snuggle.',
+      'imageUrl': 'assets/images/Cat1.png',
       'isAdopted': false,
     },
     {
       'name': 'Max',
       'type': 'Dog',
-      'imageUrl': 'https://petharbor.com/get_image.asp?RES=Detail&ID=A717530&LOCATION=KING',
+      'age': 4,
+      'description': 'Loyal and protective dog, great with families.',
+      'imageUrl': 'assets/images/Dog2.png',
       'isAdopted': false,
     },
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    _loadAnimalData();
-  }
-
-  Future<void> _loadAnimalData() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      for (var animal in _animals) {
-        animal['isAdopted'] = prefs.getBool(animal['name']) ?? false;
-      }
-    });
-  }
+  final PageController _pageController = PageController();
+  bool _isFlipped = false;
+  String? _adoptingAnimal;
 
   Future<void> _adoptAnimal(String animalName) async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setBool(animalName, true);
 
     setState(() {
-      _animals.firstWhere(
-          (animal) => animal['name'] == animalName)['isAdopted'] = true;
+      _animals.firstWhere((animal) => animal['name'] == animalName)['isAdopted'] = true;
+      _adoptingAnimal = animalName;
+    });
+  }
+
+  void _showAnimalDetails(BuildContext context, Map<String, dynamic> animal) {
+    setState(() {
+      _isFlipped = !_isFlipped; // Flip the page on tap
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Swipe Animals')),
-      body: ListView.builder(
+      appBar: AppBar(title: const Text('Available Animals')),
+      body: PageView.builder(
+        controller: _pageController,
         itemCount: _animals.length,
+        scrollDirection: Axis.vertical,
         itemBuilder: (context, index) {
           final animal = _animals[index];
-          return GestureDetector(
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) => AlertDialog(
-                  title: Text('Adopt ${animal['name']}?'),
-                  content: Text('Would you like to adopt ${animal['name']}?'),
-                  actions: <Widget>[
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
+          return Stack(
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 500),
+                child: _isFlipped
+                    ? _buildAnimalDetails(animal)
+                    : _buildAnimalCard(animal),
+              ),
+              // Display the "Adopted" message only for the front side
+              if (_adoptingAnimal == animal['name'] && !_isFlipped)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black54,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.pets, color: Colors.white, size: 50),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Adopted',
+                            style: TextStyle(color: Colors.white, fontSize: 24),
+                          ),
+                        ],
+                      ),
                     ),
-                    TextButton(
-                      onPressed: () {
-                        _adoptAnimal(animal['name']);
-                        Navigator.pop(context);
-                      },
-                      child: const Text('Adopt'),
-                    ),
-                  ],
+                  ),
                 ),
-              );
-            },
-            child: ListTile(
-              leading: Image.network(animal['imageUrl']), // Display the image
-              title: Text(animal['name']),
-              subtitle: Text('Type: ${animal['type']}'),
-              trailing: animal['isAdopted']
-                  ? const Text('Adopted')
-                  : const Text('Available'),
-            ),
+            ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildAnimalCard(Map<String, dynamic> animal) {
+    return GestureDetector(
+      onTap: () => _showAnimalDetails(context, animal),
+      child: Column(
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Image.asset(
+                animal['imageUrl'],
+                fit: BoxFit.cover,
+                width: double.infinity,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  animal['name'],
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  animal['description'],
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnimalDetails(Map<String, dynamic> animal) {
+    return GestureDetector(
+      onTap: () => _showAnimalDetails(context, animal), // Flip back on tap
+      child: Container(
+        padding: const EdgeInsets.all(16.0),
+        color: Colors.white,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              animal['name'],
+              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              animal['description'],
+              style: const TextStyle(fontSize: 18),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                _adoptAnimal(animal['name']);
+              },
+              child: const Text('Adopt'),
+            ),
+          ],
+        ),
       ),
     );
   }
