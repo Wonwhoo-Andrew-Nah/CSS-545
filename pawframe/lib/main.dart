@@ -164,15 +164,23 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
     },
   ];
 
-  // 현재 페이지의 인덱스를 추적합니다.
-  int _currentAnimalIndex = 0;
+  final PageController _pageController = PageController();
+  bool _isFlipped = false;
+  String? _adoptingAnimal;
 
-  void _adoptAnimal(String animalName) async {
+  Future<void> _adoptAnimal(String animalName) async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setBool(animalName, true);
 
     setState(() {
       _animals.firstWhere((animal) => animal['name'] == animalName)['isAdopted'] = true;
+      _adoptingAnimal = animalName;
+    });
+  }
+
+  void _showAnimalDetails(BuildContext context, Map<String, dynamic> animal) {
+    setState(() {
+      _isFlipped = !_isFlipped; // Flip the page on tap
     });
   }
 
@@ -181,122 +189,56 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Available Animals')),
       body: PageView.builder(
+        controller: _pageController,
         itemCount: _animals.length,
         scrollDirection: Axis.vertical,
-        onPageChanged: (index) {
-          setState(() {
-            _currentAnimalIndex = index;
-          });
-        },
         itemBuilder: (context, index) {
           final animal = _animals[index];
-          return AnimalCard(
-            animal: animal,
-            isCurrent: index == _currentAnimalIndex,
-            onAdopt: () {
-              _adoptAnimal(animal['name']);
-              // 애니메이션과 함께 'adopted' 메시지 표시
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return Center(
-                    child: Container(
-                      color: Colors.black54,
+          return Stack(
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 500),
+                child: _isFlipped
+                    ? _buildAnimalDetails(animal)
+                    : _buildAnimalCard(animal),
+              ),
+              // Display the "Adopted" message only for the front side
+              if (_adoptingAnimal == animal['name'] && !_isFlipped)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black54,
+                    child: Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.pets, size: 50, color: Colors.white),
+                          const Icon(Icons.pets, color: Colors.white, size: 50),
                           const SizedBox(height: 8),
                           const Text(
-                            'Adopted!',
-                            style: TextStyle(fontSize: 24, color: Colors.white),
+                            'Adopted',
+                            style: TextStyle(color: Colors.white, fontSize: 24),
                           ),
                         ],
                       ),
                     ),
-                  );
-                },
-              );
-            },
+                  ),
+                ),
+            ],
           );
         },
       ),
     );
   }
-}
 
-class AnimalCard extends StatefulWidget {
-  final Map<String, dynamic> animal;
-  final bool isCurrent;
-  final VoidCallback onAdopt;
-
-  const AnimalCard({
-    super.key,
-    required this.animal,
-    required this.isCurrent,
-    required this.onAdopt,
-  });
-
-  @override
-  _AnimalCardState createState() => _AnimalCardState();
-}
-
-class _AnimalCardState extends State<AnimalCard> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-  bool _isFlipped = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _toggleCard() {
-    setState(() {
-      _isFlipped = !_isFlipped;
-      _isFlipped ? _controller.forward() : _controller.reverse();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildAnimalCard(Map<String, dynamic> animal) {
     return GestureDetector(
-      onTap: _toggleCard,
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        child: _isFlipped
-            ? _buildAnimalDetails()
-            : _buildAnimalView(),
-      ),
-    );
-  }
-
-  Widget _buildAnimalView() {
-    return Card(
-      key: ValueKey('front'),
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      onTap: () => _showAnimalDetails(context, animal),
       child: Column(
         children: [
           Expanded(
             child: ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               child: Image.asset(
-                widget.animal['imageUrl'],
+                animal['imageUrl'],
                 fit: BoxFit.cover,
                 width: double.infinity,
               ),
@@ -308,12 +250,12 @@ class _AnimalCardState extends State<AnimalCard> with SingleTickerProviderStateM
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.animal['name'],
+                  animal['name'],
                   style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  widget.animal['description'],
+                  animal['description'],
                   style: const TextStyle(fontSize: 16),
                 ),
               ],
@@ -324,26 +266,29 @@ class _AnimalCardState extends State<AnimalCard> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildAnimalDetails() {
-    return Card(
-      key: ValueKey('back'),
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+  Widget _buildAnimalDetails(Map<String, dynamic> animal) {
+    return GestureDetector(
+      onTap: () => _showAnimalDetails(context, animal), // Flip back on tap
       child: Container(
         padding: const EdgeInsets.all(16.0),
+        color: Colors.white,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              widget.animal['description'],
-              style: const TextStyle(fontSize: 20),
-              textAlign: TextAlign.center,
+              animal['name'],
+              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+            Text(
+              animal['description'],
+              style: const TextStyle(fontSize: 18),
+            ),
+            const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: widget.onAdopt,
+              onPressed: () {
+                _adoptAnimal(animal['name']);
+              },
               child: const Text('Adopt'),
             ),
           ],
