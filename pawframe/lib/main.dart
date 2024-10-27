@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:swipeable_card_stack/swipeable_card_stack.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
@@ -39,7 +40,16 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+    _checkAndNavigateToListPage();
     _loadPreferences();
+  }
+
+  Future<void> _checkAndNavigateToListPage() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.containsKey('zipCode')) {
+      Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const AnimalSwipeScreen()));
+    }
   }
 
   Future<void> _loadPreferences() async {
@@ -56,6 +66,9 @@ class _MyHomePageState extends State<MyHomePage> {
     prefs.setString('animalType', _animalType!);
     prefs.setDouble('animalAge', _animalAge);
     prefs.setString('zipCode', _zipController.text);
+
+    Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const AnimalSwipeScreen()));
   }
 
   @override
@@ -110,13 +123,6 @@ class _MyHomePageState extends State<MyHomePage> {
               onPressed: _savePreferences,
               child: const Text('Save Preferences'),
             ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => const AnimalSwipeScreen()));
-              },
-              child: const Text('Start Swiping'),
-            ),
           ],
         ),
       ),
@@ -132,49 +138,40 @@ class AnimalSwipeScreen extends StatefulWidget {
 }
 
 class _AnimalSwipeScreenState extends State<AnimalSwipeScreen> {
-  List<Map<String, dynamic>> _animals = [
+  final SwipeableCardSectionController _controller = SwipeableCardSectionController();
+  final List<Map<String, dynamic>> _animals = [
     {
       'name': 'Buddy',
       'type': 'Dog',
-      'imageUrl': 'https://petharbor.com/get_image.asp?RES=Detail&ID=A712125&LOCATION=KING',
+      'age': 3,
+      'description': 'Friendly and playful dog looking for a loving home.',
+      'imageUrl': 'assets/images/Dog1.png',
       'isAdopted': false,
     },
     {
       'name': 'Mittens',
       'type': 'Cat',
-      'imageUrl': 'https://petharbor.com/get_image.asp?RES=Detail&ID=A716708&LOCATION=KING',
+      'age': 2,
+      'description': 'Shy but affectionate cat who loves to snuggle.',
+      'imageUrl': 'assets/images/Cat1.png',
       'isAdopted': false,
     },
     {
       'name': 'Max',
       'type': 'Dog',
-      'imageUrl': 'https://petharbor.com/get_image.asp?RES=Detail&ID=A717530&LOCATION=KING',
+      'age': 4,
+      'description': 'Loyal and protective dog, great with families.',
+      'imageUrl': 'assets/images/Dog2.png',
       'isAdopted': false,
     },
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadAnimalData();
-  }
-
-  Future<void> _loadAnimalData() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      for (var animal in _animals) {
-        animal['isAdopted'] = prefs.getBool(animal['name']) ?? false;
-      }
-    });
-  }
 
   Future<void> _adoptAnimal(String animalName) async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setBool(animalName, true);
 
     setState(() {
-      _animals.firstWhere(
-          (animal) => animal['name'] == animalName)['isAdopted'] = true;
+      _animals.firstWhere((animal) => animal['name'] == animalName)['isAdopted'] = true;
     });
   }
 
@@ -182,43 +179,66 @@ class _AnimalSwipeScreenState extends State<AnimalSwipeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Swipe Animals')),
-      body: ListView.builder(
-        itemCount: _animals.length,
-        itemBuilder: (context, index) {
-          final animal = _animals[index];
+      body: SwipeableCardsSection(
+        cardController: _controller,
+        context: context,
+        items: _animals.map((animal) {
           return GestureDetector(
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) => AlertDialog(
-                  title: Text('Adopt ${animal['name']}?'),
-                  content: Text('Would you like to adopt ${animal['name']}?'),
-                  actions: <Widget>[
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        _adoptAnimal(animal['name']);
-                        Navigator.pop(context);
-                      },
-                      child: const Text('Adopt'),
-                    ),
-                  ],
-                ),
-              );
-            },
-            child: ListTile(
-              leading: Image.network(animal['imageUrl']), // Display the image
-              title: Text(animal['name']),
-              subtitle: Text('Type: ${animal['type']}'),
-              trailing: animal['isAdopted']
-                  ? const Text('Adopted')
-                  : const Text('Available'),
+            onTap: () => _showAnimalDetails(context, animal),
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    animal['imageUrl'],
+                    height: 200,
+                    fit: BoxFit.cover,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    animal['name'],
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
             ),
           );
+        }).toList(),
+        onCardSwiped: (index, direction) {
+          if (direction == Direction.right) {
+            _adoptAnimal(_animals[index]['name']);
+          }
         },
+        enableSwipeUp: false,
+        enableSwipeDown: false,
+      ),
+    );
+  }
+
+  void _showAnimalDetails(BuildContext context, Map<String, dynamic> animal) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: Text('Details of ${animal['name']}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(animal['description']),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                _adoptAnimal(animal['name']);
+                Navigator.pop(context);
+                _controller.triggerSwipeRight(); // Adopt 후 카드 스와이프
+              },
+              child: const Text('Adopt'),
+            ),
+          ],
+        ),
       ),
     );
   }
