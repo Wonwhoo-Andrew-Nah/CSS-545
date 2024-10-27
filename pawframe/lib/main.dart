@@ -200,51 +200,43 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Available Animals')),
-      body: ListView.builder(
+      body: PageView.builder(
         itemCount: _animals.length,
+        scrollDirection: Axis.vertical,
         itemBuilder: (context, index) {
           final animal = _animals[index];
           return GestureDetector(
             onTap: () => _showAnimalDetails(context, animal),
-            child: SizedBox(
-              height: MediaQuery.of(context).size.height,
-              child: Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                        child: Image.asset(
-                          animal['imageUrl'],
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+            child: Column(
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    child: Image.asset(
+                      animal['imageUrl'],
+                      fit: BoxFit.cover,
+                      width: double.infinity,
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            animal['name'],
-                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            animal['description'],
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        animal['name'],
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        animal['description'],
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           );
         },
