@@ -204,29 +204,47 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
         itemCount: _animals.length,
         itemBuilder: (context, index) {
           final animal = _animals[index];
-          return Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: ListTile(
-              leading: Image.asset(
-                animal['imageUrl'],
-                height: 80,
-                fit: BoxFit.cover,
-              ),
-              title: Text(
-                animal['name'],
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              subtitle: Text('${animal['type']} - ${animal['age']} years old'),
-              trailing: animal['isAdopted']
-                  ? const Icon(Icons.check, color: Colors.green)
-                  : IconButton(
-                      icon: const Icon(Icons.pets),
-                      onPressed: () => _showAnimalDetails(context, animal),
+          return GestureDetector(
+            onTap: () => _showAnimalDetails(context, animal),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height,
+              child: Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                        child: Image.asset(
+                          animal['imageUrl'],
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
-              onTap: () => _showAnimalDetails(context, animal),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            animal['name'],
+                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            animal['description'],
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           );
         },
