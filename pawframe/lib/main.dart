@@ -206,7 +206,7 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.paw, size: 50, color: Colors.white),
+                          const Icon(Icons.pets, size: 50, color: Colors.white),
                           const SizedBox(height: 8),
                           const Text(
                             'Adopted!',
