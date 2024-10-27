@@ -164,36 +164,16 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
     },
   ];
 
-  Future<void> _adoptAnimal(String animalName) async {
+  // 현재 페이지의 인덱스를 추적합니다.
+  int _currentAnimalIndex = 0;
+
+  void _adoptAnimal(String animalName) async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setBool(animalName, true);
 
     setState(() {
       _animals.firstWhere((animal) => animal['name'] == animalName)['isAdopted'] = true;
     });
-  }
-
-  void _showAnimalDetails(BuildContext context, Map<String, dynamic> animal) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) => AlertDialog(
-        title: Text('Details of ${animal['name']}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(animal['description']),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                _adoptAnimal(animal['name']);
-                Navigator.pop(context);
-              },
-              child: const Text('Adopt'),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -203,43 +183,171 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
       body: PageView.builder(
         itemCount: _animals.length,
         scrollDirection: Axis.vertical,
+        onPageChanged: (index) {
+          setState(() {
+            _currentAnimalIndex = index;
+          });
+        },
         itemBuilder: (context, index) {
           final animal = _animals[index];
-          return GestureDetector(
-            onTap: () => _showAnimalDetails(context, animal),
-            child: Column(
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                    child: Image.asset(
-                      animal['imageUrl'],
-                      fit: BoxFit.cover,
-                      width: double.infinity,
+          return AnimalCard(
+            animal: animal,
+            isCurrent: index == _currentAnimalIndex,
+            onAdopt: () {
+              _adoptAnimal(animal['name']);
+              // 애니메이션과 함께 'adopted' 메시지 표시
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return Center(
+                    child: Container(
+                      color: Colors.black54,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.paw, size: 50, color: Colors.white),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Adopted!',
+                            style: TextStyle(fontSize: 24, color: Colors.white),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                  );
+                },
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class AnimalCard extends StatefulWidget {
+  final Map<String, dynamic> animal;
+  final bool isCurrent;
+  final VoidCallback onAdopt;
+
+  const AnimalCard({
+    super.key,
+    required this.animal,
+    required this.isCurrent,
+    required this.onAdopt,
+  });
+
+  @override
+  _AnimalCardState createState() => _AnimalCardState();
+}
+
+class _AnimalCardState extends State<AnimalCard> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+  bool _isFlipped = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _toggleCard() {
+    setState(() {
+      _isFlipped = !_isFlipped;
+      _isFlipped ? _controller.forward() : _controller.reverse();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _toggleCard,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _isFlipped
+            ? _buildAnimalDetails()
+            : _buildAnimalView(),
+      ),
+    );
+  }
+
+  Widget _buildAnimalView() {
+    return Card(
+      key: ValueKey('front'),
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Image.asset(
+                widget.animal['imageUrl'],
+                fit: BoxFit.cover,
+                width: double.infinity,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.animal['name'],
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        animal['name'],
-                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        animal['description'],
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    ],
-                  ),
+                const SizedBox(height: 8),
+                Text(
+                  widget.animal['description'],
+                  style: const TextStyle(fontSize: 16),
                 ),
               ],
             ),
-          );
-        },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnimalDetails() {
+    return Card(
+      key: ValueKey('back'),
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              widget.animal['description'],
+              style: const TextStyle(fontSize: 20),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: widget.onAdopt,
+              child: const Text('Adopt'),
+            ),
+          ],
+        ),
       ),
     );
   }
