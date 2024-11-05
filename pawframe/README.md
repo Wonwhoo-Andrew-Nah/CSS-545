@@ -59,3 +59,25 @@ For this application, we will be using storage options as below.
 
 - Local storage: basic user preferences
 - Cloud Storage: saving animal data whether it is adopted (selected by any users) or not.
+
+## State management
+
+### Persisting UI State
+
+`PawFrame` uses SharedPreferences to save data, such as the selected animal type, age, and ZIP code. This data will be restored when the app resumes or is relaunched, mimicking tombstoning.
+
+### State Management with WidgetsBindingObserver
+
+By implementing `WidgetsBindingObserver`, `PawFrame` can listen for changes to the app's lifecycle and handle suspend/resume actions.
+
+### Restoring Page State on Resume
+
+When the user comes back to the AnimalListScreen, we can ensure the "Adopted" message persists for adopted animals.
+
+### Lifecycle Handling
+
+preferences are saved when the app is paused and reloads preferences when resumed.
+
+### Adoption State
+
+Animal adoption status persists with SharedPreferences for quick restoration.
