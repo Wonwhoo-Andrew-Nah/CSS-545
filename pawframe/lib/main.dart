@@ -265,35 +265,4 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
       ),
     );
   }
-
-  Widget _buildAnimalDetails(Map<String, dynamic> animal) {
-    return GestureDetector(
-      onTap: () => _showAnimalDetails(context, animal), // Flip back on tap
-      child: Container(
-        padding: const EdgeInsets.all(16.0),
-        color: Colors.white,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              animal['name'],
-              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              animal['description'],
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                _adoptAnimal(animal['name']);
-              },
-              child: const Text('Adopt'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
