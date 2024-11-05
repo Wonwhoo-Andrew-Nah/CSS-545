@@ -31,7 +31,7 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   final TextEditingController _zipController = TextEditingController();
   String? _animalType;
   double _animalAge = 0.0;
@@ -39,8 +39,25 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _checkAndNavigateToListPage();
     _loadPreferences();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _zipController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _savePreferences(); // Save preferences on app suspend
+    } else if (state == AppLifecycleState.resumed) {
+      _loadPreferences(); // Reload preferences on app resume
+    }
   }
 
   Future<void> _checkAndNavigateToListPage() async {
@@ -65,9 +82,6 @@ class _MyHomePageState extends State<MyHomePage> {
     prefs.setString('animalType', _animalType!);
     prefs.setDouble('animalAge', _animalAge);
     prefs.setString('zipCode', _zipController.text);
-
-    Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const AnimalListScreen()));
   }
 
   @override
@@ -119,7 +133,14 @@ class _MyHomePageState extends State<MyHomePage> {
               keyboardType: TextInputType.number,
             ),
             ElevatedButton(
-              onPressed: _savePreferences,
+              onPressed: () async {
+                await _savePreferences();
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (context) => const AnimalListScreen(),
+                  ),
+                );
+              },
               child: const Text('Save Preferences'),
             ),
           ],
@@ -164,9 +185,20 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
     },
   ];
 
-  final PageController _pageController = PageController();
-  bool _isFlipped = false;
-  String? _adoptingAnimal;
+  @override
+  void initState() {
+    super.initState();
+    _loadAdoptedStatus();
+  }
+
+  Future<void> _loadAdoptedStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      for (var animal in _animals) {
+        animal['isAdopted'] = prefs.getBool(animal['name']) ?? false;
+      }
+    });
+  }
 
   Future<void> _adoptAnimal(String animalName) async {
     final prefs = await SharedPreferences.getInstance();
@@ -174,13 +206,6 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
 
     setState(() {
       _animals.firstWhere((animal) => animal['name'] == animalName)['isAdopted'] = true;
-      _adoptingAnimal = animalName;
-    });
-  }
-
-  void _showAnimalDetails(BuildContext context, Map<String, dynamic> animal) {
-    setState(() {
-      _isFlipped = !_isFlipped; // Flip the page on tap
     });
   }
 
@@ -189,7 +214,6 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Available Animals')),
       body: PageView.builder(
-        controller: _pageController,
         itemCount: _animals.length,
         scrollDirection: Axis.vertical,
         itemBuilder: (context, index) {
@@ -198,12 +222,9 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
             children: [
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 500),
-                child: _isFlipped
-                    ? _buildAnimalDetails(animal)
-                    : _buildAnimalCard(animal),
+                child: _buildAnimalCard(animal),
               ),
-              // Display the "Adopted" message only for the front side
-              if (_adoptingAnimal == animal['name'] && !_isFlipped)
+              if (animal['isAdopted'])
                 Positioned.fill(
                   child: Container(
                     color: Colors.black54,
@@ -231,7 +252,7 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
 
   Widget _buildAnimalCard(Map<String, dynamic> animal) {
     return GestureDetector(
-      onTap: () => _showAnimalDetails(context, animal),
+      onTap: () => _adoptAnimal(animal['name']),
       child: Column(
         children: [
           Expanded(
