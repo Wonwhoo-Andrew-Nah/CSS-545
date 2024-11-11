@@ -34,11 +34,6 @@ The app targets individuals interested in adopting pets, especially those lookin
 
 Success will be measured by the number of adoptions facilitated through the app, particularly of at-risk animals. User satisfaction, engagement (for example, social sharing can be a measure later on).
 
-## State management
-
-The app implements tombstoning management (suspend/resume) using `shared_preferences` for local storage. 
-This ensures that user preferences (animal type, age, ZIP code) and the app’s current state are preserved when the app is paused or closed, allowing users to resume from where they left off.
-
 ### Example
 
 If the user enters their preferences and navigates away, they will return to the same screen with their previous input intact when they resume the app.
@@ -69,38 +64,55 @@ For this application, we will be using storage options as below.
 - Local storage: basic user preferences
 - Cloud Storage: saving animal data whether it is adopted (selected by any users) or not.
 
+## Basic Functionality
+
+- Saves user's preferences; Species, Age, ZIP for searching near shelters.
+- Page view for searching abandoned animals.
+- Filter option based on user's preference.
+- Information retrieval from the county's animal shelter API.
+  - More information when flipping the animal page.
+- "Adopt" button on the back of the page.
+- Gives user instruction after tapping "Adopt" button.
+- After adoption, the page is colored as "Adopted".
+
 ## State management
+
+The app implements tombstoning management (suspend/resume) using `shared_preferences` for local storage. 
+This ensures that user preferences (animal type, age, ZIP code) and the app’s current state are preserved when the app is paused or closed, allowing users to resume from where they left off.
+
 
 ### Persisting UI State
 
-`PawFrame` uses SharedPreferences to save data, such as the selected animal type, age, and ZIP code. This data will be restored when the app resumes or is relaunched, mimicking tombstoning.
+`PawFrame` uses SharedPreferences to save data, such as the selected animal type, age, and ZIP code.  
+This data will be restored when the app resumes or is relaunched, mimicking tombstoning.
 
 ### State Management with WidgetsBindingObserver
 
-By implementing `WidgetsBindingObserver`, `PawFrame` can listen for changes to the app's lifecycle and handle suspend/resume actions.
+By implementing `WidgetsBindingObserver`, 
+`PawFrame` can listen for changes to the app's lifecycle and handle suspend/resume actions.
 
 ### Restoring Page State on Resume
 
-When the user comes back to the AnimalListScreen, we can ensure the "Adopted" message persists for adopted animals.
+When the user comes back to the AnimalListScreen, 
+we can ensure the "Adopted" message persists for adopted animals.
 
 ### Lifecycle Handling
 
-preferences are saved when the app is paused and reloads preferences when resumed.
+Preferences are saved when the app is paused and reloads preferences when resumed.
 
 ### Adoption State
 
-Animal adoption status persists with SharedPreferences for quick restoration.
+Animal adoption status persists with `shared_preferences` for quick restoration.
 
 ## Remaining Work (Beta Phase)
 
 ### To Be Completed
 
-1. User Interface Enhancements
-
-- Improve the user interface to provide clearer feedback when an animal is adopted.
-- Add animation transitions between screens for better user experience. (aspirational)
-
-2. Data Integration
-
-- Complete the integration with King County Open Data API to fetch real-time animal data.
+1. Data Integration
 - Ensure data consistency between local and cloud storage. (aspirational)
+- Complete the integration with King County Open Data API to fetch real-time animal data.
+
+2. User Interface Enhancements
+
+- Add animation transitions between screens for better user experience. (aspirational)
+- Improve the user interface to provide clearer feedback when an animal is adopted.
