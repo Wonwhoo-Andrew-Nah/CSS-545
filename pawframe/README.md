@@ -34,6 +34,15 @@ The app targets individuals interested in adopting pets, especially those lookin
 
 Success will be measured by the number of adoptions facilitated through the app, particularly of at-risk animals. User satisfaction, engagement (for example, social sharing can be a measure later on).
 
+## State management
+
+The app implements tombstoning management (suspend/resume) using `shared_preferences` for local storage. 
+This ensures that user preferences (animal type, age, ZIP code) and the app’s current state are preserved when the app is paused or closed, allowing users to resume from where they left off.
+
+### Example
+
+If the user enters their preferences and navigates away, they will return to the same screen with their previous input intact when they resume the app.
+
 ## Storage options
 
 Our application stores data as follows.
@@ -81,3 +90,17 @@ preferences are saved when the app is paused and reloads preferences when resume
 ### Adoption State
 
 Animal adoption status persists with SharedPreferences for quick restoration.
+
+## Remaining Work (Beta Phase)
+
+### To Be Completed
+
+1. User Interface Enhancements
+
+- Improve the user interface to provide clearer feedback when an animal is adopted.
+- Add animation transitions between screens for better user experience. (aspirational)
+
+2. Data Integration
+
+- Complete the integration with King County Open Data API to fetch real-time animal data.
+- Ensure data consistency between local and cloud storage. (aspirational)
