@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -158,132 +160,77 @@ class AnimalListScreen extends StatefulWidget {
 }
 
 class _AnimalListScreenState extends State<AnimalListScreen> {
-  final List<Map<String, dynamic>> _animals = [
-    {
-      'name': 'Buddy',
-      'type': 'Dog',
-      'age': 3,
-      'description': 'Friendly and playful dog looking for a loving home.',
-      'imageUrl': 'assets/images/Dog1.png',
-      'isAdopted': false,
-    },
-    {
-      'name': 'Mittens',
-      'type': 'Cat',
-      'age': 2,
-      'description': 'Shy but affectionate cat who loves to snuggle.',
-      'imageUrl': 'assets/images/Cat1.png',
-      'isAdopted': false,
-    },
-    {
-      'name': 'Max',
-      'type': 'Dog',
-      'age': 4,
-      'description': 'Loyal and protective dog, great with families.',
-      'imageUrl': 'assets/images/Dog2.png',
-      'isAdopted': false,
-    },
-  ];
+  List<dynamic> _animals = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadAdoptedStatus();
+    _fetchAnimals();
   }
 
-  Future<void> _loadAdoptedStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      for (var animal in _animals) {
-        animal['isAdopted'] = prefs.getBool(animal['name']) ?? false;
+  Future<void> _fetchAnimals() async {
+    const String apiUrl = 'https://data.kingcounty.gov/resource/ytc8-tcih.json';
+    try {
+      final response = await http.get(Uri.parse(apiUrl));
+      if (response.statusCode == 200) {
+        setState(() {
+          _animals = jsonDecode(response.body);
+          _isLoading = false;
+        });
+      } else {
+        print('Failed to load data: ${response.statusCode}');
       }
-    });
-  }
-
-  Future<void> _adoptAnimal(String animalName) async {
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setBool(animalName, true);
-
-    setState(() {
-      _animals.firstWhere((animal) => animal['name'] == animalName)['isAdopted'] = true;
-    });
+    } catch (e) {
+      print('Error occurred: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Available Animals')),
-      body: PageView.builder(
-        itemCount: _animals.length,
-        scrollDirection: Axis.vertical,
-        itemBuilder: (context, index) {
-          final animal = _animals[index];
-          return Stack(
-            children: [
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 500),
-                child: _buildAnimalCard(animal),
-              ),
-              if (animal['isAdopted'])
-                Positioned.fill(
-                  child: Container(
-                    color: Colors.black54,
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.pets, color: Colors.white, size: 50),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Adopted',
-                            style: TextStyle(color: Colors.white, fontSize: 24),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : PageView.builder(
+              itemCount: _animals.length,
+              scrollDirection: Axis.vertical,
+              itemBuilder: (context, index) {
+                final animal = _animals[index];
+                return _buildAnimalCard(animal);
+              },
+            ),
     );
   }
 
   Widget _buildAnimalCard(Map<String, dynamic> animal) {
-    return GestureDetector(
-      onTap: () => _adoptAnimal(animal['name']),
-      child: Column(
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: Image.asset(
-                animal['imageUrl'],
-                fit: BoxFit.cover,
-                width: double.infinity,
+    return Column(
+      children: [
+        Expanded(
+          child: Image.network(
+            animal['image'] ?? '',
+            fit: BoxFit.cover,
+            width: double.infinity,
+            errorBuilder: (context, error, stackTrace) {
+              return const Center(child: Text('Image not available'));
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                animal['name'] ?? 'Unknown',
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
-            ),
+              const SizedBox(height: 8),
+              Text(animal['description'] ?? 'No description available'),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  animal['name'],
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  animal['description'],
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
