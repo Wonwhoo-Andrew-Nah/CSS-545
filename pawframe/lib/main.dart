@@ -2,6 +2,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:crypto/crypto.dart';
+
+String hashData(String data) {
+  final bytes = utf8.encode(data); // String을 바이트로 변환
+  final digest = sha256.convert(bytes); // SHA256 해싱
+  return digest.toString(); // 해시 값을 문자열로 반환
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -73,17 +80,24 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _animalType = prefs.getString('animalType') ?? 'Dog';
-      _animalAge = prefs.getDouble('animalAge') ?? 0;
-      _zipController.text = prefs.getString('zipCode') ?? '';
+      // 로드된 데이터를 디코딩하여 사용하기 어려우므로 기본값 설정
+      _animalType = 'Unknown (hashed)';
+      _animalAge = 0.0;
+      _zipController.text = 'Unknown (hashed)';
     });
+
+    // for debugging
+    print('Animal Type Hash: ${prefs.getString('animalType')}');
+    print('Animal Age Hash: ${prefs.getString('animalAge')}');
+    print('ZIP Code Hash: ${prefs.getString('zipCode')}');
   }
 
   Future<void> _savePreferences() async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setString('animalType', _animalType!);
-    prefs.setDouble('animalAge', _animalAge);
-    prefs.setString('zipCode', _zipController.text);
+
+    prefs.setString('animalType', hashData(_animalType!));
+    prefs.setString('animalAge', hashData(_animalAge.toString()));
+    prefs.setString('zipCode', hashData(_zipController.text));
   }
 
   @override
@@ -172,7 +186,12 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
   Future<void> _fetchAnimals() async {
     const String apiUrl = 'https://data.kingcounty.gov/resource/ytc8-tcih.json';
     try {
-      final response = await http.get(Uri.parse(apiUrl));
+      final response = await http.get(
+        Uri.parse('https://data.kingcounty.gov/resource/ytc8-tcih.json'),
+        headers: {
+          'User-Agent': 'Flutter-App',
+        },
+      );
       if (response.statusCode == 200) {
         setState(() {
           _animals = jsonDecode(response.body);
@@ -223,7 +242,8 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
             children: [
               Text(
                 animal['name'] ?? 'Unknown',
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(animal['description'] ?? 'No description available'),
