@@ -5,9 +5,9 @@ import 'package:http/http.dart' as http;
 import 'package:crypto/crypto.dart';
 
 String hashData(String data) {
-  final bytes = utf8.encode(data); // String을 바이트로 변환
-  final digest = sha256.convert(bytes); // SHA256 해싱
-  return digest.toString(); // 해시 값을 문자열로 반환
+  final bytes = utf8.encode(data); // String to bytes
+  final digest = sha256.convert(bytes); // SHA256 hashing
+  return digest.toString();
 }
 
 void main() async {
@@ -63,9 +63,9 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
-      _savePreferences(); // Save preferences on app suspend
+      _savePreferences();
     } else if (state == AppLifecycleState.resumed) {
-      _loadPreferences(); // Reload preferences on app resume
+      _loadPreferences();
     }
   }
 
@@ -80,13 +80,11 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      // 로드된 데이터를 디코딩하여 사용하기 어려우므로 기본값 설정
       _animalType = 'Unknown (hashed)';
       _animalAge = 0.0;
       _zipController.text = 'Unknown (hashed)';
     });
 
-    // for debugging
     print('Animal Type Hash: ${prefs.getString('animalType')}');
     print('Animal Age Hash: ${prefs.getString('animalAge')}');
     print('ZIP Code Hash: ${prefs.getString('zipCode')}');
@@ -185,13 +183,18 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
 
   Future<void> _fetchAnimals() async {
     const String apiUrl = 'https://data.kingcounty.gov/resource/ytc8-tcih.json';
+    const String apiToken = 'd9x1znx8y0z7rwgepnls98cn0';
+
     try {
       final response = await http.get(
-        Uri.parse('https://data.kingcounty.gov/resource/ytc8-tcih.json'),
+        Uri.parse('$apiUrl?\$limit=5000&\$\$app_token=$apiToken'),
         headers: {
           'User-Agent': 'Flutter-App',
+          'Authorization':
+              'Basic ${base64Encode(utf8.encode('d9x1znx8y0z7rwgepnls98cn0:1b6y3zrxcyjgjzor4n7r28hy6rlcpmvop7ilseebaziojscy61'))}',
         },
       );
+
       if (response.statusCode == 200) {
         setState(() {
           _animals = jsonDecode(response.body);
@@ -211,9 +214,8 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
       appBar: AppBar(title: const Text('Available Animals')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : PageView.builder(
+          : ListView.builder(
               itemCount: _animals.length,
-              scrollDirection: Axis.vertical,
               itemBuilder: (context, index) {
                 final animal = _animals[index];
                 return _buildAnimalCard(animal);
