@@ -183,15 +183,15 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
 
   Future<void> _fetchAnimals() async {
     const String apiUrl = 'https://data.kingcounty.gov/resource/ytc8-tcih.json';
-    const String apiToken = 'd9x1znx8y0z7rwgepnls98cn0';
+    const String apiToken = '6yAff0sPYQ6WXsPGlUkV1Gced';
 
     try {
       final response = await http.get(
-        Uri.parse('$apiUrl?\$limit=5000&\$\$app_token=$apiToken'),
+        Uri.parse(apiUrl),
         headers: {
-          'User-Agent': 'Flutter-App',
-          'Authorization':
-              'Basic ${base64Encode(utf8.encode('d9x1znx8y0z7rwgepnls98cn0:1b6y3zrxcyjgjzor4n7r28hy6rlcpmvop7ilseebaziojscy61'))}',
+          'Host': 'data.kingcounty.gov',
+          'Accept': 'application/json',
+          'X-App-Token': apiToken,
         },
       );
 
