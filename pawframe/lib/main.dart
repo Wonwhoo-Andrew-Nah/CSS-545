@@ -214,6 +214,32 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
     );
   }
 
+  String parseAnimalMemo(String? rawMemo) {
+    
+    if (rawMemo == Null) {
+      return 'No description available';
+    }
+
+    List<String> parsedData = rawMemo!.split('<p/>');
+    Map<String, String> memoMap = {};
+    for (String item in parsedData) {
+      if (item.contains(':')) {
+        int splitIndex = item.indexOf(':');
+        String key = item.substring(0, splitIndex).trim();
+        String value = item.substring(splitIndex + 1).trim();
+        memoMap[key] = value;
+      }
+    }
+
+    String result = "";
+
+    memoMap.forEach((key, value) {
+      result += '$key: $value\n';
+    });
+
+    return result;
+  }
+
   Widget _buildAnimalCard(Map<String, dynamic> animal) {
     // Page flip animation
     return GestureDetector(
@@ -222,7 +248,7 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
           context,
           MaterialPageRoute(
             builder: (context) => AnimalMemoPage(
-              animalMemo: animal['memo'] ?? 'No description available',
+              animalMemo: parseAnimalMemo(animal['memo']),
             ),
           ),
         );
