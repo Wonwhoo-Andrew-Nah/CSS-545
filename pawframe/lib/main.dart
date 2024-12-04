@@ -77,15 +77,10 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       _animalAge = 0.0;
       _zipController.text = '00000';
     });
-
-    // print('Animal Type Hash: ${prefs.getString('animalType')}');
-    // print('Animal Age Hash: ${prefs.getString('animalAge')}');
-    // print('ZIP Code Hash: ${prefs.getString('zipCode')}');
   }
 
   Future<void> _savePreferences() async {
     final prefs = await SharedPreferences.getInstance();
-
     prefs.setString('animalType', _animalType ?? 'Dog');
     prefs.setString('animalAge', _animalAge.toString());
     prefs.setString('zipCode', _zipController.text);
@@ -220,37 +215,77 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
   }
 
   Widget _buildAnimalCard(Map<String, dynamic> animal) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Flexible(
-          fit: FlexFit.loose,
-          child: Image.network(
-            // TODO: default image
-            animal['image']?['url'] ?? 'https://petharbor.com/get_image.asp?RES=Detail&LOCATION=KING&ID=A708686',
-            fit: BoxFit.cover,
-            width: double.infinity,
-            errorBuilder: (context, error, stackTrace) {
-              return const Center(child: Text('Image not available'));
-            },
+    // Page flip animation
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AnimalMemoPage(
+              animalMemo: animal['memo'] ?? 'No description available',
+            ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                animal['animal_name'] ?? 'untitled',
-                style:
-                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        );
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            fit: FlexFit.loose,
+            child: Image.network(
+              animal['image']?['url'] ??
+                  'https://petharbor.com/get_image.asp?RES=Detail&LOCATION=KING&ID=A708686',
+              fit: BoxFit.cover,
+              width: double.infinity,
+              errorBuilder: (context, error, stackTrace) {
+                return const Center(child: Text('Image not available'));
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  animal['animal_name'] ?? 'Untitled',
+                  style: const TextStyle(
+                      fontSize: 24, fontWeight: FontWeight.bold),
+                )
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AnimalMemoPage extends StatelessWidget {
+  final String animalMemo;
+
+  const AnimalMemoPage({super.key, required this.animalMemo});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Animal Memo')),
+      body: SingleChildScrollView(
+        child: Center(
+          child: AnimatedSwitcher(
+            duration: const Duration(seconds: 1),
+            child: Container(
+              key: ValueKey<String>(animalMemo),
+              color: Colors.white,
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                animalMemo,
+                style: const TextStyle(fontSize: 18),
               ),
-              const SizedBox(height: 8),
-              Text(animal['memo'] ?? 'no description'),
-            ],
+            ),
           ),
         ),
-      ],
+      ),
     );
   }
 }
