@@ -2,13 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'package:crypto/crypto.dart';
-
-String hashData(String data) {
-  final bytes = utf8.encode(data); // String to bytes
-  final digest = sha256.convert(bytes); // SHA256 hashing
-  return digest.toString();
-}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -80,22 +73,22 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _animalType = 'Unknown (hashed)';
+      _animalType = 'Dog';
       _animalAge = 0.0;
-      _zipController.text = 'Unknown (hashed)';
+      _zipController.text = '00000';
     });
 
-    print('Animal Type Hash: ${prefs.getString('animalType')}');
-    print('Animal Age Hash: ${prefs.getString('animalAge')}');
-    print('ZIP Code Hash: ${prefs.getString('zipCode')}');
+    // print('Animal Type Hash: ${prefs.getString('animalType')}');
+    // print('Animal Age Hash: ${prefs.getString('animalAge')}');
+    // print('ZIP Code Hash: ${prefs.getString('zipCode')}');
   }
 
   Future<void> _savePreferences() async {
     final prefs = await SharedPreferences.getInstance();
 
-    prefs.setString('animalType', hashData(_animalType!));
-    prefs.setString('animalAge', hashData(_animalAge.toString()));
-    prefs.setString('zipCode', hashData(_zipController.text));
+    prefs.setString('animalType', _animalType ?? 'Dog');
+    prefs.setString('animalAge', _animalAge.toString());
+    prefs.setString('zipCode', _zipController.text);
   }
 
   @override
@@ -227,9 +220,10 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
   Widget _buildAnimalCard(Map<String, dynamic> animal) {
     return Column(
       children: [
-        Expanded(
+        Flexible(
           child: Image.network(
-            animal['image'] ?? '',
+            // TODO: default image
+            animal['image']['url'],
             fit: BoxFit.cover,
             width: double.infinity,
             errorBuilder: (context, error, stackTrace) {
@@ -243,12 +237,12 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                animal['name'] ?? 'Unknown',
+                animal['animal_name'],
                 style:
                     const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              Text(animal['description'] ?? 'No description available'),
+              Text(animal['memo']),
             ],
           ),
         ),
