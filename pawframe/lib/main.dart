@@ -207,10 +207,12 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
       appBar: AppBar(title: const Text('Available Animals')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
+          : PageView.builder(
+              scrollDirection: Axis.vertical,
               itemCount: _animals.length,
               itemBuilder: (context, index) {
                 final animal = _animals[index];
+                print("current animal index is:$index");
                 return _buildAnimalCard(animal);
               },
             ),
@@ -219,11 +221,13 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
 
   Widget _buildAnimalCard(Map<String, dynamic> animal) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Flexible(
+          fit: FlexFit.loose,
           child: Image.network(
             // TODO: default image
-            animal['image']['url'],
+            animal['image']?['url'] ?? 'https://petharbor.com/get_image.asp?RES=Detail&LOCATION=KING&ID=A708686',
             fit: BoxFit.cover,
             width: double.infinity,
             errorBuilder: (context, error, stackTrace) {
@@ -237,12 +241,12 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                animal['animal_name'],
+                animal['animal_name'] ?? 'untitled',
                 style:
                     const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              Text(animal['memo']),
+              Text(animal['memo'] ?? 'no description'),
             ],
           ),
         ),
