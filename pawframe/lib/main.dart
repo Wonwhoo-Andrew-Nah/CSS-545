@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Home'),
+      home: const MyHomePage(title: 'Home'), // Always show MyHomePage as the first screen
     );
   }
 }
@@ -44,8 +44,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _checkAndNavigateToListPage();
-    _loadPreferences();
+    _loadPreferences(); // Always load preferences on initial load
   }
 
   @override
@@ -64,24 +63,16 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _checkAndNavigateToListPage() async {
-    String? zipCode = await _secureStorage.read(key: 'zipCode');
-    if (zipCode != null) {
-      Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const AnimalListScreen()));
-    }
-  }
-
   Future<void> _loadPreferences() async {
-    await _secureStorage.deleteAll();
+    await _secureStorage.deleteAll(); // Clear preferences first, if needed
     String? animalType = await _secureStorage.read(key: 'animalType');
     String? animalAge = await _secureStorage.read(key: 'animalAge');
     String? zipCode = await _secureStorage.read(key: 'zipCode');
 
     setState(() {
-      _animalType = animalType ?? 'Dog'; 
-      _animalAge = double.tryParse(animalAge ?? '0.0') ?? 0.0; 
-      _zipController.text = zipCode ?? '00000'; 
+      _animalType = animalType ?? 'Dog';
+      _animalAge = double.tryParse(animalAge ?? '0.0') ?? 0.0;
+      _zipController.text = zipCode ?? '00000';
     });
   }
 
@@ -156,6 +147,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     );
   }
 }
+
 
 class AnimalListScreen extends StatefulWidget {
   const AnimalListScreen({super.key});
