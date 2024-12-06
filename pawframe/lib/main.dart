@@ -73,20 +73,19 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _loadPreferences() async {
-    // 저장된 데이터를 읽어와 상태를 초기화
+    await _secureStorage.deleteAll();
     String? animalType = await _secureStorage.read(key: 'animalType');
     String? animalAge = await _secureStorage.read(key: 'animalAge');
     String? zipCode = await _secureStorage.read(key: 'zipCode');
 
     setState(() {
-      _animalType = animalType ?? 'Dog'; // 기본값 'Dog'
-      _animalAge = double.tryParse(animalAge ?? '0.0') ?? 0.0; // 기본값 0.0
-      _zipController.text = zipCode ?? '00000'; // 기본 ZIP 코드
+      _animalType = animalType ?? 'Dog'; 
+      _animalAge = double.tryParse(animalAge ?? '0.0') ?? 0.0; 
+      _zipController.text = zipCode ?? '00000'; 
     });
   }
 
   Future<void> _savePreferences() async {
-    // 데이터를 안전하게 저장
     await _secureStorage.write(key: 'animalType', value: _animalType ?? 'Dog');
     await _secureStorage.write(key: 'animalAge', value: _animalAge.toString());
     await _secureStorage.write(key: 'zipCode', value: _zipController.text);
